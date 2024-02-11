@@ -1,0 +1,444 @@
+//library
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#define MIN_ELIGIBLE_AGE 18
+
+#define CARS 20
+#define NAME 30
+#define FEEDBACK_SIZE 1000
+#define SALE_FILES "sales_data.txt"
+
+//structure for feedback of car and sales
+struct Feedback {
+    int rating;
+    char comment[FEEDBACK_SIZE];
+};
+
+struct Sales {
+    char customerName[NAME];
+    char modelName[NAME];
+    int numberOfCars;
+    float totalPrice;
+    int discountGiven;
+    float discountValue;
+    time_t purchaseDate;
+
+};
+
+
+// Data of cars
+double carPrices[CARS] = {40000, 50000, 45000,34000};
+char carModels[CARS][NAME] = {"Ferrari", "Range rover", "Tesla", "Lamborghini"};
+int carYear[CARS] = {2023, 2022, 2022,2021};
+int carStock[CARS] = {10, 5, 8,12};
+    struct Feedback carFeedback[CARS];
+    struct Sales carSales[CARS * 10];
+    int totalSales = 0;
+
+// functions
+int displayMenu();
+void viewCarsStock();
+void buyCars();
+void swapCars(int i, int j);
+void leaveFeedback(int modelIndex);
+void customerFeedback();
+void clearBuffer();
+void showFeedback();
+void viewSalesData();
+int compareTotalSales(const void *a, const void *b);
+void saveSalesDataToFile();
+void loadSalesDataFromFile();
+
+// Greetings
+int main() {
+    loadSalesDataFromFile();
+    char name[20];
+    int choice;
+
+    printf("Hello\n");
+    printf("What is your name? \n");
+    fgets(name, 20, stdin);
+    printf("Hello, %s\n", name);
+    printf("Welcome to Ayant Motorsports.\n");
+    printf("We are one of the leading car dealership. \n");
+    printf("Press Enter key to view menu:\n");
+    getchar();
+
+    do {
+
+            choice = displayMenu();
+            switch (choice) {
+                case 1:
+                    //About us
+                    printf("\nIn 1988 in India, we started our journey in Automobile industry.\n"
+                           "We failed many times but never lost hope in our way to success.\n"
+                           "At present we are one of the trusted and reliable dealership to choose for your dream car.\n"
+                           "The dealership has more than 250000 happy customers and many more to join.\n"
+                           "Feel free to contact us for more information. Call:1234567890\n\n");
+                    printf("Press Enter key to view menu:");
+                    getchar();
+                    break;
+                case 2:
+                    //View cars
+                    viewCarsStock();
+                    break;
+                case 3:
+                    //Buy cars
+                    buyCars();
+                    break;
+                case 4:
+                   // View sales
+                   viewSalesData();
+                    break;
+                case 5:
+                    //Customer feedback
+                    customerFeedback();
+                    getchar();
+                    break;
+                case 6:
+                    //Show feedback
+                    showFeedback();
+                    break;
+                case 7:
+                    //EXit
+                    printf("\nExiting the purchase...\n");
+                    break;
+                default:
+                    printf("\nWrong choice!\n");
+            }
+        } while (choice != 7);
+    saveSalesDataToFile();
+    return 0;
+    }
+//Menu
+int  displayMenu() {
+    int choice;
+    printf("-----Menu-----\n");
+    printf("1. About us\n");
+    printf("2. View cars\n");
+    printf("3. Buy cars\n");
+    printf("4. View sales data\n");
+    printf("5. Customer feedback\n");
+    printf("6. Show feedback\n");
+    printf("7. Exit\n");
+    printf("Enter your choice: ");
+    scanf("%d", &choice);
+
+    if (choice < 1 || choice > 7) {
+        printf("\nWrong choice, Please write a number from 1 to 7.\n");
+        clearBuffer();
+        return displayMenu();
+    }
+
+    clearBuffer();
+    return choice;
+}
+//Display of car stocks
+    void viewCarsStock() {
+    //sorting of cars year in descending order
+        for (int i = 0; i < CARS - 1; i++) {
+            for (int j = 0; j < CARS - i - 1; j++) {
+                if (carYear[j] < carYear[j + 1]) {
+                    swapCars(j, j + 1);
+                }
+            }
+        }
+        printf("\nCars in Stock:\n");
+        printf("%-15s %-10s %-10s %-10s\n","Model","Year","Price","Stock");
+        printf("--------------------------------------------\n");
+
+        for (int i = 0; i < CARS && carPrices[i] != 0; i++) {
+            printf("%-15s %-10d %-10.02f %4d\n", carModels[i], carYear[i], carPrices[i], carStock[i]);
+        }
+        printf("\nPress Enter key to view menu:\n");
+        clearBuffer();
+    }
+
+//Swapping of cars
+void swapCars(int i, int j) {
+
+    //swap car price
+    double tempPrice = carPrices[i];
+    carPrices[i] = carPrices[j];
+    carPrices[j] = tempPrice;
+
+    //swap car model
+char tempModel[NAME];
+    strcpy(tempModel, carModels[i]);
+    strcpy(carModels[i], carModels[j]);
+    strcpy(carModels[j], tempModel);
+
+    //swap car manufacturing model
+    int tempYear = carYear[i];
+    carYear[i] = carYear[j];
+    carYear[j] = tempYear;
+
+    //swap car stock
+    int tempStock = carStock[i];
+    carStock[i] = carStock[j];
+    carStock[j] = tempStock;
+}
+
+//Buying the car
+void buyCars() {
+    int modelChoice;
+    int carsNeed;
+    int age;
+    float discounted_price;
+
+    // purchase details
+    char customerName[NAME];
+    int discountGiven = 0;
+    float discountValue = 0;
+    time_t purchaseDate;
+
+    // Customer name
+    printf("Enter your full name for the invoice: ");
+    fgets(customerName, sizeof(customerName), stdin);
+    customerName[strcspn(customerName, "\n")] = '\0';
+
+    // Display of available car models
+    printf("\nChoose a model to buy:\n");
+    int i;
+    for (i = 0; i < CARS && carPrices[i] != 0; i++) {
+        printf("%d. %s\n", i + 1, carModels[i]);
+    }
+
+    // Model choice
+    do {
+        printf("Enter your choice: ");
+        if (scanf("%d", &modelChoice) == 1 && modelChoice >= 1 && modelChoice <= CARS && carPrices[modelChoice - 1] != 0) {
+            clearBuffer();
+            break;
+        } else {
+            printf("Wrong choice, Please write a valid model number.\n");
+            clearBuffer();
+        }
+    } while (1);
+
+    int chosenModel = modelChoice - 1;
+    printf("You chose %s.\n", carModels[chosenModel]);
+
+    // Available car stock
+    printf("Available stock for %s is: %d\n", carModels[chosenModel], carStock[chosenModel]);
+    if (carStock[chosenModel] <= 0) {
+        printf("Sorry, that model is out of stock.\n");
+        return;
+    }
+
+    // Quantity
+    do {
+        printf("How many cars do you want to buy? ");
+        if (scanf("%d", &carsNeed) == 1 && carsNeed > 0 && carsNeed <= carStock[chosenModel]) {
+            clearBuffer();
+            break;
+        } else {
+            printf("Wrong quantity, Please write a valid quantity.\n");
+            clearBuffer();
+        }
+    } while (1);
+
+    // Age
+    int validAge = 0;
+    do {
+        printf("What is your age? ");
+        if (scanf("%d", &age) == 1 && age >= MIN_ELIGIBLE_AGE) {
+            clearBuffer();
+            validAge = 1;
+            break;
+        } else {
+            printf("Sorry, you must be at least %d years old to make a purchase.\n", MIN_ELIGIBLE_AGE);
+            printf("\nPress Enter key to view menu:\n");
+            clearBuffer();
+            clearBuffer();
+            return;
+        }
+    } while (1);
+    // Deduct purchased quantity from available stock
+    carStock[chosenModel] -= carsNeed;
+
+    float totalPrice;
+    if (age >= 18 && age <= 25) {
+        printf("You are eligible for a discount.\n");
+        discountGiven = 1;
+        discountValue = 0.1;
+    } else {
+        printf("You are not eligible for a discount.\n");
+    char response;
+    do{
+        printf("Do you still want to continue with the purchase? (Y/N): ");
+        scanf(" %c", &response);
+        clearBuffer();
+
+        if (response == 'Y' || response == 'y') {
+
+            // Continue the purchase
+            break;
+        } else if (response == 'N' || response == 'n') {
+
+            // Exit the buyCars function
+            printf("Purchase cancelled. Returning to the main menu.\n");
+            return;
+        } else {
+            printf("Wrong response. Please choose Y or N.\n");
+        }
+    } while (1);
+    }
+
+    discounted_price = carsNeed * carPrices[chosenModel];
+    printf("Thank you for your purchase.\nYou can see your purchase in sales data.\n");
+    printf("Press Enter key to view the menu:\n");
+    clearBuffer();
+
+    totalPrice = discounted_price;
+    time_t currentTime = time(NULL);
+    if (currentTime != -1) {
+        purchaseDate = currentTime;
+
+        strcpy(carSales[totalSales].customerName, customerName);
+        strcpy(carSales[totalSales].modelName, carModels[chosenModel]);
+        carSales[totalSales].numberOfCars = carsNeed;
+        carSales[totalSales].totalPrice = totalPrice;
+        carSales[totalSales].discountGiven = discountGiven;
+        carSales[totalSales].discountValue = discountValue;
+        carSales[totalSales].purchaseDate = purchaseDate;
+
+        totalSales++;
+    } else {
+        printf("Error getting current time. date of purchase not recorded.\n");
+    }
+}
+void customerFeedback() {
+    int modelChoice;
+
+    // Display available car models
+    printf("\nChoose a model to leave feedback for:\n");
+    for (int i = 0; i < CARS && carPrices[i] != 0; i++) {
+        printf("%d. %s\n", i + 1, carModels[i]);
+    }
+
+    // Model choice
+    do {
+        printf("Enter your choice: ");
+        if (scanf("%d", &modelChoice) == 1 && modelChoice >= 1 && modelChoice <= CARS && carPrices[modelChoice - 1] != 0) {
+            clearBuffer();
+            break;
+        } else {
+            printf("Wrong choice, Please write a valid model number.\n");
+            clearBuffer();
+        }
+    } while (1);
+
+    int chosenModel = modelChoice - 1;
+    leaveFeedback(chosenModel);
+}
+
+//clears any remaining characters in input buffer
+void clearBuffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+void showFeedback() {
+
+    // Display feedback for each car model
+    printf("\nFeedback for each car model:\n");
+    for (int i = 0; i < CARS && carPrices[i] != 0; i++) {
+        printf("Feedback for %s:\n", carModels[i]);
+        if (carFeedback[i].rating > 0) {
+            printf("Rating: %d\n", carFeedback[i].rating);
+            printf("Comment: %s\n", carFeedback[i].comment);
+        } else {
+            printf("No feedback yet.\n");
+        }
+        printf("------------------------------\n");
+    }
+    printf("Press Enter key to view the menu:\n");
+    clearBuffer();
+}
+
+void leaveFeedback(int modelIndex) {
+    int rating;
+    char comment[1000];
+
+    printf("\nLeave your feedback for %s:\n", carModels[modelIndex]);
+    do {
+        printf("Enter your rating (out of 5): ");
+        if (scanf("%d", &rating) == 1 && rating >= 1 && rating <= 5) {
+            clearBuffer();
+            break;
+        } else {
+            printf("Invalid rating. Please write a rating between 1 and 5.\n");
+            clearBuffer();
+        }
+    } while (1);
+
+    do {
+        printf("Enter your comment (max 1000 characters): ");
+        getchar();
+        fgets(comment, sizeof(comment), stdin);
+        comment[strcspn(comment, "\n")] = '\0';
+        if (strlen(comment) == 0) {
+            printf("Comment cannot be empty.\n");
+        }
+    } while (strlen(comment) == 0);
+
+    // feedback process
+    strcpy(carFeedback[modelIndex].comment, comment);
+    carFeedback[modelIndex].rating = rating;
+    printf("\nThank you for your feedback!\n");
+    printf("Press Enter key to view the menu:\n");
+    clearBuffer();
+}
+int compareTotalSales(const void *a, const void *b) {
+    return ((struct Sales *)b)->totalPrice - ((struct Sales *)a)->totalPrice;
+}
+void viewSalesData() {
+    printf("\nSales Data:\n");
+    if (totalSales == 0) {
+        printf("No sales data available.\n");
+    } else {
+        // Sorting the sales data in descending order
+        qsort(carSales, totalSales, sizeof(struct Sales), compareTotalSales);
+
+        printf("%-5s %-20s %-20s %-10s %-15s %-15s %-25s\n",
+               "Sale #", "Customer Name", "Model Purchased", "Quantity", "Total Price", "Discount Given", "Date of Purchase");
+        printf("---------------------------------------------------------------------------------------------------------------\n");
+
+        for (int i = 0; i < totalSales; i++) {
+            printf("%-6d %-20s %-22s %-8d £%-15.2f %-14s %s",
+                   i + 1, carSales[i].customerName, carSales[i].modelName,
+                   carSales[i].numberOfCars, carSales[i].totalPrice,
+                   (carSales[i].discountGiven == 1) ? "Yes" : "No",
+                   asctime(localtime(&carSales[i].purchaseDate)));
+        }
+    }
+    printf("Press Enter key to view the menu:\n");
+    clearBuffer();
+}
+void saveSalesDataToFile() {
+    FILE *file = fopen(SALE_FILES, "wb");
+    if (file == NULL) {
+        printf("Not able to open the file.\n");
+        return;
+    }
+    fwrite(&totalSales, sizeof(totalSales), 1, file);
+    fwrite(carSales, sizeof(struct Sales), totalSales, file);
+
+    fclose(file);
+}
+
+void loadSalesDataFromFile() {
+    FILE *file = fopen(SALE_FILES, "rb");
+    if (file == NULL) {
+        printf("No previous sales data found.\n");
+        return;
+    }
+
+    fread(&totalSales, sizeof(totalSales), 1, file);
+    fread(carSales, sizeof(struct Sales), totalSales, file);
+
+    fclose(file);
+}
